@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 
-const PORT = 8523;
+const PORT = 9523;
 const URI =
   "mongodb+srv://maharjan:maharjan123@cluster0.kmul092.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
@@ -39,7 +39,7 @@ function getContentType(filePath) {
 
 function readFile(res, filePath) {
   const contentType = getContentType(filePath);
-  fs.readFile(filePath, (err, content) => {
+  fs.readFile(filePath, "utf-8", (err, content) => {
     if (err) throw err;
 
     res.writeHead(200, { "Content-Type": contentType });
@@ -47,18 +47,43 @@ function readFile(res, filePath) {
   });
 }
 
-async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Successfully connected to MongoDB!");
+async function getProducts(client) {
+  const cursor = client
+    .db("online_shopping_site")
+    .collection("products")
+    .find({});
+  return await cursor.toArray();
+}
 
+async function getOffers(client) {
+  const cursor = client
+    .db("online_shopping_site")
+    .collection("offers")
+    .find({});
+  return await cursor.toArray();
+}
+
+async function getProductsAndOffers(client) {
+  const results = {
+    products: await getProducts(client),
+    offers: await getOffers(client),
+  };
+  return results;
+}
+
+client
+  .connect()
+  .then(() => {
+    console.log("Successfully connected to MongoDB!");
     http
       .createServer(async (req, res) => {
         const { url } = req;
-
+        // Allow CORS origin policy from anywhere
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Origin, Content-Type, Accept, X-Requested-with"
+        );
         if (url == "/") {
           const filePath = path.join(__dirname, "public", "index.html");
           readFile(res, filePath);
@@ -69,27 +94,26 @@ async function run() {
           const fileName = url.substring(8);
           const filePath = path.join(__dirname, "public", "images", fileName);
           readFile(res, filePath);
-        } else if (url == "/api/products") {
-          const cursor = await client
-            .db("bookdb")
-            .collection("bookcollection")
-            .find({});
-          const result = await cursor.toArray();
-          const response = { data: result, status: 200, message: "success" };
-
+        } else if (url == "/api") {
+          const result = await getProductsAndOffers(client);
           res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify(response));
+          res.end(JSON.stringify(result));
+        } else if (url == "/api/products") {
+          const result = await getProducts(client);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        } else if (url == "/api/offers") {
+          const result = await getOffers(client);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
         } else {
-          // File not found error.
-          res.write("Nothing changed");
+          const filePath = path.join(__dirname, "public", "404.html");
+          readFile(res, filePath);
         }
       })
       .listen(PORT, () => console.log(`server running at port: ${PORT}`));
-  } catch {
-    // Ensures that the client will close when you finish/error
-    console.log("Connection closing");
-    await client.close();
-  }
-}
-
-run().catch(console.dir);
+  })
+  .catch((error) => {
+    // Error while connecting to MongoDb Client.
+    console.log("Failure to connect to MongoDb Client");
+  });
