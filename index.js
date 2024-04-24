@@ -16,6 +16,12 @@ const client = new MongoClient(URI, {
   },
 });
 
+/**
+ * Get the appropriate content type according to the file.
+ * 
+ * @param {String} filePath Path for the file.
+ * @returns Appropriate content type for the file.
+ */
 function getContentType(filePath) {
   const extname = path.extname(filePath);
   switch (extname) {
@@ -37,6 +43,12 @@ function getContentType(filePath) {
   }
 }
 
+/**
+ * Function to read the filepath.
+ *
+ * @param {Response} res
+ * @param {String} filePath
+ */
 function readFile(res, filePath) {
   const contentType = getContentType(filePath);
   fs.readFile(filePath, "utf-8", (err, content) => {
@@ -47,6 +59,12 @@ function readFile(res, filePath) {
   });
 }
 
+/**
+ * Function to fetch the products database.
+ *
+ * @param {Object} client Database client - Mongodb
+ * @returns Array of products
+ */
 async function getProducts(client) {
   const cursor = client
     .db("online_shopping_site")
@@ -55,6 +73,12 @@ async function getProducts(client) {
   return await cursor.toArray();
 }
 
+/**
+ * Function to fetch the offers database.
+ *
+ * @param {Object}  client Database client - Mongodb
+ * @returns Array of products
+ */
 async function getOffers(client) {
   const cursor = client
     .db("online_shopping_site")
@@ -63,6 +87,12 @@ async function getOffers(client) {
   return await cursor.toArray();
 }
 
+/**
+ * Function to fetch the products and offers from database.
+ *
+ * @param {Object} client Database client - Mongodb
+ * @returns Object of products array and offers array
+ */
 async function getProductsAndOffers(client) {
   const results = {
     products: await getProducts(client),
