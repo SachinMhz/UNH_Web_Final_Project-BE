@@ -7,6 +7,7 @@ const PORT = 9523;
 const URI =
   "mongodb+srv://maharjan:maharjan123@cluster0.kmul092.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
+// For extra credit - Connection with MongoDb
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(URI, {
   serverApi: {
@@ -18,7 +19,7 @@ const client = new MongoClient(URI, {
 
 /**
  * Get the appropriate content type according to the file.
- * 
+ *
  * @param {String} filePath Path for the file.
  * @returns Appropriate content type for the file.
  */
@@ -46,15 +47,16 @@ function getContentType(filePath) {
 /**
  * Function to read the filepath.
  *
- * @param {Response} res
- * @param {String} filePath
+ * @param {Response} res - Response
+ * @param {String} filePath - Full filepath for the file
+ * @param {Number} statusCode - Status code for the response
  */
-function readFile(res, filePath) {
+function readFile(res, filePath, statusCode) {
   const contentType = getContentType(filePath);
-  fs.readFile(filePath, "utf-8", (err, content) => {
+  fs.readFile(filePath, (err, content) => {
     if (err) throw err;
 
-    res.writeHead(200, { "Content-Type": contentType });
+    res.writeHead(statusCode && 200, { "Content-Type": contentType });
     res.end(content);
   });
 }
@@ -124,6 +126,13 @@ client
           const fileName = url.substring(8);
           const filePath = path.join(__dirname, "public", "images", fileName);
           readFile(res, filePath);
+        } else if (url.includes("admin")) { // For extra credit: Showing Unauthorized Page.
+          const filePath = path.join(
+            __dirname,
+            "public",
+            "401-unauthorized.html"
+          );
+          readFile(res, filePath, 401);
         } else if (url == "/api") {
           const result = await getProductsAndOffers(client);
           res.writeHead(200, { "Content-Type": "application/json" });
@@ -137,8 +146,8 @@ client
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify(result));
         } else {
-          const filePath = path.join(__dirname, "public", "404.html");
-          readFile(res, filePath);
+          const filePath = path.join(__dirname, "public", "404-not-found.html"); // For extra credit: Showing Not Found Page.
+          readFile(res, filePath, 404);
         }
       })
       .listen(PORT, () => console.log(`server running at port: ${PORT}`));
