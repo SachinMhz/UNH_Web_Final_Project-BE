@@ -56,7 +56,7 @@ function readFile(res, filePath, statusCode) {
   fs.readFile(filePath, (err, content) => {
     if (err) throw err;
 
-    res.writeHead(statusCode && 200, { "Content-Type": contentType });
+    res.writeHead(statusCode ? statusCode : 200, { "Content-Type": contentType });
     res.end(content);
   });
 }
@@ -126,7 +126,8 @@ client
           const fileName = url.substring(8);
           const filePath = path.join(__dirname, "public", "images", fileName);
           readFile(res, filePath);
-        } else if (url.includes("admin")) { // For extra credit: Showing Unauthorized Page.
+        } else if (url.includes("admin")) {
+          // For extra credit: Showing Unauthorized Page.
           const filePath = path.join(
             __dirname,
             "public",
